@@ -1,0 +1,69 @@
+---
+title: '[크롤링] 한국경제신문 자동차 시승기'
+output: html_document
+---
+  
+### **필요 패키기 설치**
+
+```{r}
+library(rvest)
+library(dplyr)
+library(stringr)
+```
+
+### **한국경제신문 자동차 시승기 메인 페이지 url 생성**
+
+```{r}
+trim <- function(x) gsub("^\\s+|\\s+$", "", x) # 정규식을 이용한 화이트 페이스 문자 제거하는 함수 
+
+base_url <- "http://auto.hankyung.com/autoreview?page=" # 한국경제신문 자동차 시승기 
+page_url <- NULL
+for (i in 1:2) { # 페이지당 기사가 20-개, 테스트가 가능한 정도만 크롤링 
+  page_url[i] <- paste0(base_url,i) # page별 url생성 
+}
+```
+
+### **페이지 내 기사 각각의 url 생성**
+
+```{r}
+each_urls <- NULL
+for (urls in page_url) { # page 내 개별 기사 url생성 
+  html <- read_html(urls)
+  each_urls <- c(each_urls, html %>% html_node(".inner_list") %>% html_nodes("li") %>% html_node("a") %>% html_attr("href"))
+}
+```
+
+### **개별 기사에서 크롤링 진행**
+
+```{r}
+title <- NULL
+contents <- NULL
+date <- NULL
+
+for (real_urls in each_urls) {
+  html <- read_html(real_urls)
+  title <- c(title, html %>% html_node(".article_top") %>% html_node(".title") %>% html_text())
+  contents <- c(contents, html %>% html_node(".wrap_article") %>% html_nodes("#articletxt")  %>% html_text())
+  date <- c(date, html %>% html_node(".article_top") %>% html_node(".date-published") %>% html_text())
+}
+```
+
+### **크롤링한 결과를 데이터프레임으로 생성**
+
+```{r}
+hk_cars_trial_ride <- data.frame(기사url = each_urls,
+                                 기사제목 = title,
+                                 기사내용 = trim(contents),
+                                 기사작성날짜 = date)
+```
+
+### **데이터프레임을 엑셀파일로 저장**
+
+```{r}
+View(hk_cars_trial_ride)
+
+# library(xlsx)
+# write.xlsx(hk_cars_trial_ride,file="한국경제신문_자동차_시승기.xlsx", row.names=F)
+
+```
+
