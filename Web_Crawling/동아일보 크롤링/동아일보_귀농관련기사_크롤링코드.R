@@ -21,7 +21,7 @@ date <- NULL
 for (urls in page_url) {
   html <- read_html(urls)
   title <- c(title, html %>% html_nodes(".searchList") %>% html_nodes(".tit") %>% html_text())
-  txt   <- c(txt, html %>% html_nodes(".searchList") %>% html_nodes(".txt") %>% html_text())
+  txt   <- c(txt, html %>% html_nodes(".searchList") %>% html_nodes(".txt") %>% html_text()) # 단, 이런식으로 할 경우 모든 기사 내용을 가져올 수 없음 
   url  <- c(url, html %>% html_nodes(".searchList") %>% html_nodes(".tit") %>% html_node("a") %>% html_attr("href"))
   date <- c(date, html %>% html_nodes(".searchList") %>% html_nodes(".tit") %>% html_nodes("span") %>% html_text())
 }
@@ -31,7 +31,7 @@ trim <- function(text) {gsub("^\\s+|\\s+$|\\n","", text)}
 donga_article <- data.frame(기사제목 = trim(title),
                             기사내용 = trim(txt),
                             기사입력날짜 = date[-grep("귀농", date)],
-                            기사url = trim(urls))
+                            기사url = trim(url))
 install.packages("xlsx")
 library(xlsx)
 
