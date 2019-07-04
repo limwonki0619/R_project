@@ -5,6 +5,7 @@ setwd("D:/limworkspace/R_project/Project_01")
 
 library(xlsx)
 library(dplyr)
+library(lubridate)
 
 OG_data <- read.xlsx2("네이버_영화_리뷰_알라딘.xlsx", sheetIndex=1, header=T, stringsAsFactors=F)
 dataset <- OG_data # 원본데이터 복사 (엑셀파일 불러올 때 메모리오류로 인해 에러가 자주남) # options(java.parameters = "-Xmx7168m")
@@ -14,9 +15,9 @@ str(dataset)
 dataset$점수 <- as.numeric(dataset$점수)
 dataset$공감 <- as.numeric(dataset$공감)
 dataset$비공감 <- as.numeric(dataset$비공감)
-dataset$요일 <- factor(dataset$요일, levels = c("월요일","화요일","수요일","목요일","금요일","토요일","일요일"),
-                     labels=c("월요일","화요일","수요일","목요일","금요일","토요일","일요일"))
-
+dataset$날짜 <- ymd(dataset$날짜)
+dataset$시간 <- factor(dataset$시간, levels=c(1:24), order=T)
+dataset$요일 <- factor(dataset$요일, levels=c("월","화","수","목","금","토","일"), order=T)
 str(dataset)
 
 # 1. 워드클라우드 만들기 -------------------------------

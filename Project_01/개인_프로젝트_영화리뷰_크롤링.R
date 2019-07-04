@@ -3,6 +3,8 @@ setwd("D:/limworkspace/R_project/Project_01")
 library(rvest)
 library(dplyr)
 library(stringr)
+library(xlsx)
+library(lubridate)
 
 trim <- function(text){gsub("\\s+","",text)} # str_trim(text, c("both"))와 같음 
 
@@ -36,6 +38,7 @@ lis <- NULL
 score <- NULL
 user_name <- NULL 
 date <- NULL
+time <- NULL
 up <- NULL
 down <- NULL
 movie_code <- NULL
@@ -64,10 +67,10 @@ for (url in page_url) {
   date <-  c(date, lis %>% # 작성날짜 및 시간 
                html_node(".score_reple") %>% 
                html_nodes("em")  %>%  
-               .[seq(2, length(lis)*3, by=3)] %>%
+               .[seq(2, length(lis)*3, by=3)] %>% 
                html_text() %>% 
-               str_sub(., 1, 10))  # factor를 Date형식으로 변환 후 저장 
-  
+               str_replace_all(.,"\\.+","-"))
+
   score <- c(score, lis %>% # 평점
                html_node(".star_score") %>% 
                html_text() %>% 
@@ -89,6 +92,7 @@ for (url in page_url) {
   movie_name <- c(movie_name, rep(moviename, length(lis))) # 영화이름
 }
 
+
 naver_movie_reviews <- data.frame(영화명=movie_name,
                                      영화코드=movie_code,
                                      이름=user_name,
@@ -96,9 +100,10 @@ naver_movie_reviews <- data.frame(영화명=movie_name,
                                      점수=score,
                                      공감=up,
                                      비공감=down,
-                                     날짜=as.Date(date,"%Y.%m.%d"),           # %Y.%m.%d으로 기존 날짜 형식의 형태를 알려줌 
-                                     요일=weekdays(as.Date(date,"%Y.%m.%d"))) # weekdays 함수로 날짜에 맞는 요일 출력 
-library(xlsx)
+                                     날짜=str_sub(date,1,10),           
+                                     시간=hour(date),
+                                     요일=wday(date, label = T)) # weekdays 함수로 날짜에 맞는 요일 출력 
+
 write.xlsx(naver_movie_reviews, file=paste0("네이버_영화_리뷰_",moviename,".xlsx"), row.names=F) # write.xlsx(변수, 파일명, ...)
 
 
