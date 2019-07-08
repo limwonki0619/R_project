@@ -223,7 +223,7 @@ ggplot(dis, aes(x=점수, y=리뷰수)) +
     geom_text(aes(y=리뷰수+500, label=리뷰수), family='dohyeon', size=3.5) +
       scale_x_continuous(breaks = c(seq(0,10,1))) +
     theme_bw(base_size = 12, base_family = "jalnan") +
-    labs(title = "점수별 뷰 수 분포", y = "리뷰 수(단위:건)") +
+    labs(title = "점수별 리뷰 수 분포", y = "리뷰 수(단위:건)") +
     theme(plot.title = element_text(hjust = 0.5))
 ```
 
