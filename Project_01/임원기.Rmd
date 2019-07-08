@@ -5,67 +5,92 @@ date: '2019 7 6 '
 output: html_document
 ---
 
-### 0. 네이버 영화 리뷰 크롤링 
+### **1. 네이버 영화 리뷰 크롤링**
 ***
 
-  <br>
-
-#### 1. 필요 패키지 설치 
+#### 1.1 필요 패키지 설치 
 
 ```{r, eval=FALSE}
+library(rJava) # rJava와 KoNLP는 다른 패키지보다 우선적으로 설치해주는 게 좋음
+library(KoNLP)
+library(lubridate)
+library(stringr)
+library(reshape2)
 library(rvest)
 library(dplyr)
-library(stringr)
 library(xlsx)
-library(lubridate)
+library(ggplot2)
+library(extrafont)
+windowsFonts(dohyeon=windowsFont("BM DoHyeon"))
+windowsFonts(jalnan=windowsFont("Jalnan"))
 
-trim <- function(text){gsub("\\s+","",text)} # str_trim(text, c("both"))와 같음 
 ```
 
 ```{r, include=FALSE}
 library(rJava) 
 library(KoNLP)
-library(xlsx)
 library(lubridate)
 library(stringr)
-library(wordcloud2)
 library(reshape2)
+library(rvest)
+library(dplyr)
+library(xlsx)
+library(ggplot2)
 library(extrafont)
 windowsFonts(dohyeon=windowsFont("BM DoHyeon"))
 windowsFonts(jalnan=windowsFont("Jalnan"))
-library(ggplot2)
-library(rvest)
-library(dplyr)
 
-trim <- function(text){gsub("\\s+","",text)} # str_trim(text, c("both"))와 같음 
 ```
 
-```{r, eval=FALSE}
-# 기본 url 생성 -------------------------------------------------------------------------
+  <br> 
+
+#### 1.2 기본 url 생성
+
+```{r}
 base_url_1 <- "https://movie.naver.com/movie/bi/mi/pointWriteFormList.nhn?code=" # 바뀌지 않는 앞쪽 url
 moviecode <- "163788"     # 영화코드 
 moviename <- "알라딘"     # 영화이름
 type <- "after"           # 영화관람 후
 base_url_2 <- "&isActualPointWriteExecute=false&isMileageSubscriptionAlready=false&isMileageSubscriptionReject=false&page=" # page를 포함한 뒤쪽 url
 
-# 영화 코드별 메인 url ------------------------------------------------------------------
-main_url <- paste0(base_url_1, moviecode) # 필수 url
+# 영화 '알라딘'의 url 생성 
+main_url <- paste0(base_url_1, moviecode)
+```
 
-# 총 페이지 수 --------------------------------------------------------------------------
+  <br> 
+
+#### 1.3 가져올 총 페이지 수 생성
+
+```{r}
 total_page_num <- paste0(main_url, "&type=", type, base_url_2, "1") %>% 
   read_html() %>% 
   html_node(".score_total") %>% 
   html_node(".total") %>% 
   html_nodes("em") %>% .[2] %>% html_text() %>% str_remove(",") %>% as.numeric()/10
+total_page_num
+```
 
+  <br> 
+
+#### 1.4 '알라딘' url 생성
+
+```{r}
 # page url 생성 -------------------------------------------------------------------------
 page_url <- NULL
 
 for (page in 1:ceiling(total_page_num)) { # 총 페이지 수를 올림 
   page_url[page] <- paste0(main_url, "&type=", type, base_url_2, page)
 }
+head(page_url); tail(page_url)
+```
 
-# 정보 출력 loop ------------------------------------------------------------------------
+  <br> 
+
+#### 1.5 원하는 정보 크롤링 
+
+```{r, eval=FALSE}
+trim <- function(text){gsub("\\s+","",text)} # str_trim(text, c("both"))와 같음 
+
 reviews <- NULL
 lis <- NULL 
 score <- NULL
@@ -124,7 +149,8 @@ for (url in page_url) {
   movie_code <- c(movie_code, rep(moviecode, length(lis))) # 영화코드
   movie_name <- c(movie_name, rep(moviename, length(lis))) # 영화이름
 }
-
+```
+```{r, eval=FALSE}
 
 naver_movie_reviews <- data.frame(영화명=movie_name,
                                      영화코드=movie_code,
@@ -136,25 +162,37 @@ naver_movie_reviews <- data.frame(영화명=movie_name,
                                      날짜=str_sub(date,1,10),           
                                      시간=hour(date),
                                      요일=wday(date, label = T)) # weekdays 함수로 날짜에 맞는 요일 출력 
-
-write.xlsx(naver_movie_reviews, file=paste0("네이버_영화_리뷰_",moviename,".xlsx"), row.names=F) # write.xlsx(변수, 파일명, ...)
 ```
 
   <br>
 
-### 1. 크롤링한 데이터 불러오기
+#### 1.6 크롤링 된 데이터 프레임을 엑셀로 저장 
+
+```{r, eval=FALSE}
+write.xlsx(naver_movie_reviews, file=paste0("네이버_영화_리뷰_",moviename,".xlsx"), row.names=F) # write.xlsx(변수, 파일명, ...)
+```
+
+  <br><br> 
+  
+### **2. 리뷰 작성자의 일반적 특성 분석**
 ***
+
+### 2.1 데이터 전처리 
+
+  <br>
+  
+#### 2.1.1 크롤링한 데이터 불러오기
 
 ```{r}
 # 수집된 데이터 불러오기 -------------------------------- 
 OG_data <- read.xlsx2("네이버_영화_리뷰_알라딘.xlsx", sheetIndex=1, header=T, stringsAsFactors=F)
 dataset <- OG_data # 원본데이터 복사 (엑셀파일 불러올 때 메모리오류로 인해 에러가 자주남) # options(java.parameters = "-Xmx7168m")
+str(dataset)
 ```
 
   <br>
 
-### 2. 데이터 형태 맞춰주기
-***
+#### 2.1.2 데이터 형태 맞춰주기
 
 ```{r}
 dataset$점수 <- as.numeric(dataset$점수)
@@ -165,18 +203,14 @@ dataset$시간 <- factor(dataset$시간, levels=c(0:23), order=T)
 dataset$요일 <- factor(dataset$요일, levels=c("월","화","수","목","금","토","일"), order=T)
 dataset$평점그룹 <- ifelse(dataset$점수 >= 9, "A", ifelse(dataset$점수 <= 5, "C", "B"))
 dataset$주 <- ifelse(dataset$요일 %in% c("토","일"), "주말", "주중")
+str(dataset)
 ```
 
   <br>
 
-### 3. 데이터 탐색적 분석 
-***
-
-  데이터 분석에 들어가기 앞서 데이터 구조와 데이터의 분포를 파악해 본다.
+### 2.2 리뷰 작성자 분석 
   
 ```{r}
-str(dataset)
-
 dis <-dataset %>%
   group_by(점수) %>% 
   summarise(리뷰수 = n()) %>% as.data.frame()
@@ -192,7 +226,7 @@ ggplot(dis, aes(x=점수, y=리뷰수)) +
 
   <br>
 
-#### 3.1 일별 평점 평균 변화와 댓글 수 
+#### 2.2.1 일별 평점 평균 변화와 댓글 수 
 
 ```{r}
 # 일별 평점 데이터 생성 
@@ -218,6 +252,7 @@ ggplot(all_date_point,aes(x=날짜)) +
     scale_x_date(breaks = all_date_point$날짜, labels=str_sub(all_date_point$날짜,7,10)) 
 ```
 
+
 ```{r}
 # 일별 댓글 수
 ggplot(all_date_point, aes(x=날짜, y=댓글수)) +
@@ -235,7 +270,7 @@ ggplot(all_date_point, aes(x=날짜, y=댓글수)) +
 
   <br>
 
-#### 3.2 요일별 평점 평균 및 댓글 수
+#### 2.2.2 요일별 평점 평균 및 댓글 수
 
 ```{r}
 # 요일별 평점 데이터 생성 
@@ -260,16 +295,18 @@ ggplot(wday_point, aes(x=요일, y=댓글수)) +
 
   <br>
 
-#### 3.3 시간대별 평점 평균과 댓글 수
+#### 2.2.3 시간대별 평점 평균과 댓글 수
 
 ```{r}
-all_time_point <- dataset %>% # 데이터 생성 
+# 시간대별 데이터 생성 
+all_time_point <- dataset %>% 
   group_by(시간) %>%
   summarise(date_mean_point = mean(점수),
             공감수 = sum(공감),
             비공감수 = sum(비공감),
             댓글수 = n())
 
+# 시간대별 평점 평균
 ggplot(all_time_point,aes(x=시간)) +
   geom_point(aes(y=date_mean_point, color=rainbow(24), size=2)) +
   geom_segment(aes(x=시간,xend=시간,y=0,yend=date_mean_point), color="grey50") +
@@ -280,6 +317,7 @@ ggplot(all_time_point,aes(x=시간)) +
     labs(y="평점평균", title="시간대별 평점평균") +
   geom_text(aes(y=date_mean_point+0.08, label=round(date_mean_point,2), family="dohyeon"))
 ```
+
 
 ```{r}
 # 시간대별 댓글 수
@@ -296,15 +334,18 @@ ggplot(all_time_point, aes(x=시간, y=댓글수)) +
 
   <br>
 
-#### 3.4 평점이 낮은 그룹(5점 이하)의 시간대별 평점평균과 댓글 수
+#### 2.2.4 평점이 낮은 그룹(5점 이하)의 시간대별 평점평균과 댓글 수
 
 ```{r}
 # 평점이 낮은 그룹 시간대별 평점평균 및 버즈량 ------------------------------------------- 
 A_group <- filter(dataset, 평점그룹 == "A") # 9~10점 
 B_group <- filter(dataset, 평점그룹 == "B") # 6~8점
 C_group <- filter(dataset, 평점그룹 == "C") # 5 점 이하
+```
 
-C_time_point <- C_group %>% # 데이터 생성 
+```{r}
+# C 그룹의 시간대별 데이터 생성 
+C_time_point <- C_group %>%  
   group_by(시간) %>%
   summarise(date_mean_point = mean(점수),
             공감수 = sum(공감),
@@ -312,7 +353,9 @@ C_time_point <- C_group %>% # 데이터 생성
             댓글수 = n())
 ```
 
+
 ```{r}
+# C 그룹의 시간대별 댓글 수 
 ggplot(C_time_point, aes(x=시간, y=댓글수)) +
   geom_col(fill="red", alpha=0.3, color="grey20") + 
   geom_text(aes(y=댓글수+2, label=댓글수), color='grey20', family="jalnan") + 
@@ -325,7 +368,9 @@ ggplot(C_time_point, aes(x=시간, y=댓글수)) +
 
 ```
 
+
 ```{r}
+# C 그룹의 시간대별 평점평균 
 ggplot(C_time_point,aes(x=시간)) +
   geom_point(aes(y=date_mean_point, color=rainbow(24), size=2)) +
   geom_segment(aes(x=시간,xend=시간,y=0,yend=date_mean_point), color="grey50") +
@@ -337,23 +382,25 @@ ggplot(C_time_point,aes(x=시간)) +
   geom_text(aes(y=date_mean_point+0.1, label=round(date_mean_point,2), family="dohyeon"))
 ```
 
-### 4 평점이 높은 그룹(A, 9~10점)과 낮은 그룹(C, 0~5점)의 워드클라우드 
-***
+###  **3. 리뷰 분석 : 평점이 높은 그룹과 낮은 그룹을 대상으로**
 
-#### 4.1 필요 패키지 설치 
+  <br>
 
-```{r}
-library(rJava) 
-library(KoNLP)
-library(dplyr)
-library(stringr)
+#### 3.1 필요 패키지 설치 
+
+```{r, eval=FALSE}
+library(wordcloud2)
+library(reshape2)
+```
+
+```{r, include=FALSE}
 library(wordcloud2)
 library(reshape2)
 ```
 
   <br>
 
-#### 4.2 데이터 전처리를 위한 함수 생성 
+#### 3.2 데이터 전처리를 위한 함수 생성 
 
 ```{r, eval=FALSE}
 ## 점수대(그룹)별 워드클라우드 --------------------------------------
@@ -367,14 +414,16 @@ clean <- function(text) {
 
   <br>
 
-#### 4.3 2~7자리의 보통명사 추출 및 결과물 저장 
+#### 3.3 [2~7자리] 보통명사 추출 및 결과물 저장 
 
 ```{r, eval=FALSE}
 length(dataset$리뷰) # 총 리뷰수 18604 
 A_review <- clean(A_group$리뷰) # 9~10점
 B_review <- clean(B_group$리뷰) # 6~8점
 C_review <- clean(C_group$리뷰) # 5점이하
+```
 
+```{r, eval=FALSE}
 write.table(A_review,"알라딘_리뷰_전처리_후_A.txt", row.names=F, col.names=F, quote=F) # 임시저장
 write.table(B_review,"알라딘_리뷰_전처리_후_B.txt", row.names=F, col.names=F, quote=F) # 임시저장
 write.table(C_review,"알라딘_리뷰_전처리_후_C.txt", row.names=F, col.names=F, quote=F) # 임시저장
@@ -382,12 +431,14 @@ write.table(C_review,"알라딘_리뷰_전처리_후_C.txt", row.names=F, col.na
 
   <br>
 
-##### **4.4 A 그룹의 워드클라우드**
+#### 3.4 A 그룹의 워드클라우드
 
 ```{r}
 A_text <- readLines("알라딘_리뷰_전처리_후_A.txt")
 head(sort(table(A_text), decreasing = T),50)
+```
 
+```{r}
 A_text <- gsub("재밌어요","재미", A_text)
 A_text <- gsub("재밌고","재미", A_text)
 A_text <- gsub("재밌게","재미", A_text)
@@ -402,11 +453,9 @@ for (i in 1:length(gsub_txt)) {
   A_text  <- gsub((gsub_txt[i]),"",A_text)
 }
 
-A_text <- A_text[A_text != ""] 
-A_wc <-head(sort(table(A_text), decreasing = T),50)
-```
+A_text <- A_text[A_text != ""]
 
-```{r}
+A_wc <-head(sort(table(A_text), decreasing = T),50)
 wordcloud2(A_wc, size=0.7, 
            col="random-light", backgroundColor="black",
            fontFamily='나눔바른고딕')
@@ -415,10 +464,9 @@ wordcloud2(A_wc, size=0.7,
 
   <br>
 
-#### **4.5 C 그룹의 워드클라우드**
+#### 3.5 C 그룹의 워드클라우드**
 
 ```{r}
-
 # C 그룹의 워드클라우드
 C_text <- readLines("알라딘_리뷰_전처리_후_C.txt")
 
@@ -430,17 +478,12 @@ for (i in 1:length(gsub_txt)) {
 }
 
 C_text <- C_text[C_text != ""] 
+
+library(wordcloud2)
 C_wc <-head(sort(table(C_text), decreasing = T),50)
-```
 
-
-```{r}
 # 워드클라우드 생성 
 wordcloud2(C_wc, size=0.6, 
            col="random-light", backgroundColor="black",
            fontFamily='나눔바른고딕')
-
 ```
-
-
-  <br>
