@@ -21,8 +21,8 @@ dataset$비공감 <- as.numeric(dataset$비공감)
 dataset$날짜 <- ymd(dataset$날짜)
 dataset$시간 <- factor(dataset$시간, levels=c(0:23), order=T)
 dataset$요일 <- factor(dataset$요일, levels=c("월","화","수","목","금","토","일"), order=T)
-dataset$평점그룹 <- ifelse(dataset$점수 >= 9, "A", ifelse(dataset$점수 <= 5, "C", "B"))
-dataset$주 <- ifelse(dataset$요일 %in% c("토","일"), "주말", "주중")
+dataset$평점그룹 <- factor(ifelse(dataset$점수 >= 9, "A", ifelse(dataset$점수 <= 5, "C", "B")), label=c("A","B","C"))
+dataset$주 <- factor(ifelse(dataset$요일 %in% c("토","일"), "주말", "주중"), label=c("주말","주중"))
 str(dataset)
 
 # 점수별 리뷰 분포 확인 

@@ -54,7 +54,7 @@ type <- "after"           # 영화관람 후
 base_url_2 <- "&isActualPointWriteExecute=false&isMileageSubscriptionAlready=false&isMileageSubscriptionReject=false&page=" # page를 포함한 뒤쪽 url
 
 # 영화 '알라딘'의 url 생성 
-main_url <- paste0(base_url_1, moviecode)
+(main_url <- paste0(base_url_1, moviecode))
 ```
 
   <br> 
@@ -72,7 +72,7 @@ total_page_num
 
   <br> 
 
-#### 1.4 '알라딘' url 생성
+#### 1.4 '알라딘' 영화 페이지의 리뷰 url 생성
 
 ```{r}
 # page url 생성 -------------------------------------------------------------------------
@@ -81,7 +81,7 @@ page_url <- NULL
 for (page in 1:ceiling(total_page_num)) { # 총 페이지 수를 올림 
   page_url[page] <- paste0(main_url, "&type=", type, base_url_2, page)
 }
-head(page_url); tail(page_url)
+tail(page_url)
 ```
 
   <br> 
@@ -201,14 +201,17 @@ dataset$비공감 <- as.numeric(dataset$비공감)
 dataset$날짜 <- ymd(dataset$날짜)
 dataset$시간 <- factor(dataset$시간, levels=c(0:23), order=T)
 dataset$요일 <- factor(dataset$요일, levels=c("월","화","수","목","금","토","일"), order=T)
-dataset$평점그룹 <- ifelse(dataset$점수 >= 9, "A", ifelse(dataset$점수 <= 5, "C", "B"))
-dataset$주 <- ifelse(dataset$요일 %in% c("토","일"), "주말", "주중")
+dataset$평점그룹 <- factor(ifelse(dataset$점수 >= 9, "A", ifelse(dataset$점수 <= 5, "C", "B")), label=c("A","B","C"))
+dataset$주 <- factor(ifelse(dataset$요일 %in% c("토","일"), "주말", "주중"), label=c("주말","주중"))
 str(dataset)
 ```
 
-  <br>
+  <br><br>
 
 ### 2.2 리뷰 작성자 분석 
+  
+  먼저 19년 5월 23일부터 7월 4일 까지 작성된 리뷰의 평점 분포는 다음과 같습니다. <br>
+  대부분의 사람들이 10점을 줬으며, 그 다음으로 8점, 9점 순으로 리뷰건수가 많음을 파악할 수 있습니다.
   
 ```{r}
 dis <-dataset %>%
@@ -220,7 +223,7 @@ ggplot(dis, aes(x=점수, y=리뷰수)) +
     geom_text(aes(y=리뷰수+500, label=리뷰수), family='dohyeon', size=3.5) +
       scale_x_continuous(breaks = c(seq(0,10,1))) +
     theme_bw(base_size = 12, base_family = "jalnan") +
-    labs(title = "점수별 리뷰 분포", y = "리뷰 수(단위:건)") +
+    labs(title = "점수별 뷰 수 분포", y = "리뷰 수(단위:건)") +
     theme(plot.title = element_text(hjust = 0.5))
 ```
 
@@ -241,7 +244,8 @@ all_date_point <- dataset %>%
 ggplot(all_date_point,aes(x=날짜)) +
   geom_line(aes(y=date_mean_point), color="grey20", linetype=2) +
   geom_point(aes(y=date_mean_point), color=rainbow(43), size=3, alpha=.8) + 
-  geom_text(aes(y=date_mean_point+0.04, label=round(date_mean_point,2)), family="dohyeon", size=3) +
+  geom_text(aes(y=date_mean_point+0.04, label=round(date_mean_point,2)), family="dohyeon", size=3) + 
+  geom_smooth(aes(y=date_mean_point), method = "lm", se=F, color='black') +
   coord_cartesian(ylim = c(9, 9.8)) +
     theme_bw(base_family = "jalnan", base_size = 12) +
     labs(y="평균평점", title="일별 평점평균 변화", subtitle="2019-05-23 ~ 2019-07-04") +
@@ -252,7 +256,68 @@ ggplot(all_date_point,aes(x=날짜)) +
     scale_x_date(breaks = all_date_point$날짜, labels=str_sub(all_date_point$날짜,7,10)) 
 ```
 
+  <br>
 
+  다음으로 일별 평점평균의 변화는 다음과 같습니다. <br>
+  시간이 지남에 따라 평점평균이 점차 감소하는 추세를 보이고 있습니다. <br> 
+  
+  <br> 
+  
+#### 크루스칼 왈리스 비모수 검정 : 일별 평점평균에 차이가 있을까?
+
+  <br>
+  
+  다음으로 일별 평점평균간에 차이가 있는지 검정해보겠습니다. <br><br>
+  
+  ![변수형태별 분석방법](변수유형별 분석방법.png) <br>
+  
+  ![3집단 이상의 평균비교 프로세스](3집단 평균비교 프로세스.png) <br> 
+  
+  <br>
+  <br> 
+
+  세 집단 이상의 평균 비교를 하는 모수적인 방법으로는 분산분석(ANOVA)이 있고, <br>
+  비모수적 방법으로 크루스칼 왈리스(Kruskal-Wallis H) 분석 방법이 있습니다. <br>
+  여기서 비모수적 이라는 말은 모집단의 분포가 정규성을 충족시키지 못함을 뜻합니다. <br>
+  즉, 여러집단 중 하나라도 정규성을 만족하지 않으면 비모수적 방법을 사용해야 합니다. <br>
+  
+  <br>
+  
+  우선 독립성에 대한 가정은 각 개체가 한 사람 한 사람이기 때문에 독립성을 만족한다고 보고 분석을 진행하였습니다. <br>
+  
+```{r}
+qqnorm(dataset$점수); qqline(dataset$점수, col="red") # 리뷰점수가 정규성을 갖지 않는다.
+```
+
+  일별 평균의 차이를 분석하기에 앞서 정규성을 만족하는지 직관적으로 알아보기 위해 그래프로 확인해본 결과 <br>
+  정규성이 만족되지 않으므로, 비모수적 검정방법인 크루스칼 왈리스 검정을 시행해보도록 하겠습니다. <br>
+  
+  <br>
+  
+  가설은 다음과 같이 설정하고 검정을 진행합니다.  <br>
+  
+  H0 : 모집단의 중앙값은 같다. <br> 
+  H1 : 모집단의 중앙값은 같지 않다.
+  
+```{r}
+kruskal.test(점수~날짜, dataset)
+```
+
+  검정결과 p-value 값이 5.355e-13으로 통계적으로 매우 유의합니다. 즉, 적어도 하나의 그룹에 중앙값이 같지 않음을 알 수 있습니다. <br>
+  따라서 어떤 날에 차이가 있었는지 사후검정을 시행해야 하는데, 70C2의 많은 경우의 수가 발생하므로 사후검정 결과는 생략하도록 하겠습니다. <br>
+  
+  <br>
+  
+```{r, eval=FALSE}
+library(dunn.test)
+dunn.test(dataset$점수, dataset$날짜, method='bonferroni',  altp=TRUE)
+```
+
+  다음으로 일별 댓글 수를 보면 5월 23일 개봉일인 목요일을 시작으로 일요일까지 증가하는 경향을 보이고 있으며, <br>
+  주중에는 다시 감소하는 경향을 가지고 있는 것을 볼 수 있습니다. <br>
+  이를통해 목요일~일요일 사이에 영화에 관한 버즈량이 증가할 것으로 보입니다. <br>
+  이러한 이유들로 인해 개봉일을 목요일로 선정하는 영화들이 많아지고있지 않나 생각이 듭니다. <br>
+  
 ```{r}
 # 일별 댓글 수
 ggplot(all_date_point, aes(x=날짜, y=댓글수)) +
@@ -270,33 +335,11 @@ ggplot(all_date_point, aes(x=날짜, y=댓글수)) +
 
   <br>
 
-#### 2.2.2 요일별 평점 평균 및 댓글 수
+#### 2.2.2 시간대별 평점 평균과 댓글 수
 
-```{r}
-# 요일별 평점 데이터 생성 
-wday_point <- dataset %>% 
-  group_by(요일) %>%
-  summarise(date_mean_point = mean(점수),
-            공감수 = sum(공감),
-            비공감수 = sum(비공감),
-            댓글수 = n())
-
-# 요일별 댓글 수
-ggplot(wday_point, aes(x=요일, y=댓글수)) +
-  geom_col(fill="Coral", alpha=0.7, color="grey20") + 
-  geom_text(aes(y=댓글수+130, label=댓글수), color='grey20', family="jalnan") +
-  theme_bw(base_family = "jalnan", base_size = 12) +
-  labs(title="요일별 댓글 수",y="댓글 수(단위:건)", subtitle="2019-05-23 ~ 2019-07-04") +
-  theme(plot.title = element_text(hjust=0.5),
-        plot.subtitle = element_text(hjust=0.5, color="grey20"),
-        axis.text.x = element_text(vjust=0.5),
-        axis.text.y = element_blank()) 
-```
-
-  <br>
-
-#### 2.2.3 시간대별 평점 평균과 댓글 수
-
+  다음으로 시간대별 평점평균을 보면 새벽~아침 시간대에 평균평점이 낮은것으로 보입니다. <br>
+  실제로 이 시간대의 평점평균에 차이가 있는지 확인해보겠습니다. <br>
+  
 ```{r}
 # 시간대별 데이터 생성 
 all_time_point <- dataset %>% 
@@ -318,6 +361,13 @@ ggplot(all_time_point,aes(x=시간)) +
   geom_text(aes(y=date_mean_point+0.08, label=round(date_mean_point,2), family="dohyeon"))
 ```
 
+#### 크루스칼 왈리스 비모수 검정 : 시간대별 평점평균에 차이가 있을까?
+
+```{r}
+kruskal.test(점수~시간, dataset)
+```
+  시간대별로 평점평균에 차이가있는지 알아보기 위해 위 방법과 같이 크루스칼-왈리스 검정을 시행한 결과, <br>   
+  p-value값이 0.00021로 유의수준 0.05에서 통계적으로 유의한 차이가 있는 것으로 나타났습니다. <br> 
 
 ```{r}
 # 시간대별 댓글 수
@@ -332,62 +382,20 @@ ggplot(all_time_point, aes(x=시간, y=댓글수)) +
         axis.text.y = element_blank()) 
 ```
 
-  <br>
+  다음으로 시간대별 댓글 수를 보면, 오후시간대보다 밤 시간대에 댓글이 많이 생성되는것을 파악할 수 있습니다. <br>
+  어쩌면 당연한 얘기일 수도 있지만, 마케팅적인 측면에서 본다면 목요일 정오시간부터 영화관련 홍보를 하는 것이 홍보효과를 극대화시킬 수 있지 않을까 생각합니다. <br>
 
-#### 2.2.4 평점이 낮은 그룹(5점 이하)의 시간대별 평점평균과 댓글 수
+
+###  **3. 리뷰 분석 : 평점이 높은 그룹과 낮은 그룹을 대상으로**
+***
+
+#### 3.1 그룹별 데이터 생성 및 필요 패키지 설치 
 
 ```{r}
-# 평점이 낮은 그룹 시간대별 평점평균 및 버즈량 ------------------------------------------- 
 A_group <- filter(dataset, 평점그룹 == "A") # 9~10점 
 B_group <- filter(dataset, 평점그룹 == "B") # 6~8점
 C_group <- filter(dataset, 평점그룹 == "C") # 5 점 이하
 ```
-
-```{r}
-# C 그룹의 시간대별 데이터 생성 
-C_time_point <- C_group %>%  
-  group_by(시간) %>%
-  summarise(date_mean_point = mean(점수),
-            공감수 = sum(공감),
-            비공감수 = sum(비공감),
-            댓글수 = n())
-```
-
-
-```{r}
-# C 그룹의 시간대별 댓글 수 
-ggplot(C_time_point, aes(x=시간, y=댓글수)) +
-  geom_col(fill="red", alpha=0.3, color="grey20") + 
-  geom_text(aes(y=댓글수+2, label=댓글수), color='grey20', family="jalnan") + 
-  theme_bw(base_family = "jalnan", base_size = 12) +
-  labs(title="평점이 낮은 그룹(5점이하)의 시간대별 댓글 수",y="댓글 수(단위:건)", subtitle="2019-05-23 ~ 2019-07-04") +
-  theme(plot.title = element_text(hjust=0.5),
-        plot.subtitle = element_text(hjust=0.5, color="grey20"),
-        axis.text.x = element_text(vjust=0.5),
-        axis.text.y = element_blank()) 
-
-```
-
-
-```{r}
-# C 그룹의 시간대별 평점평균 
-ggplot(C_time_point,aes(x=시간)) +
-  geom_point(aes(y=date_mean_point, color=rainbow(24), size=2)) +
-  geom_segment(aes(x=시간,xend=시간,y=0,yend=date_mean_point), color="grey50") +
-  coord_cartesian(ylim = c(1.5, 3.1)) +
-  theme_bw(base_family = "jalnan", base_size = 12) +
-  theme(legend.position = "none",
-        plot.title = element_text(hjust=0.5, size=20, family = "jalnan")) +
-  labs(y="평점평균", title="시간대별 평점평균 변화") +
-  geom_text(aes(y=date_mean_point+0.1, label=round(date_mean_point,2), family="dohyeon"))
-```
-
-###  **3. 리뷰 분석 : 평점이 높은 그룹과 낮은 그룹을 대상으로**
-
-  <br>
-
-#### 3.1 필요 패키지 설치 
-
 ```{r, eval=FALSE}
 library(wordcloud2)
 library(reshape2)
@@ -462,11 +470,14 @@ wordcloud2(A_wc, size=0.7,
 
 ```
 
+  먼저 평점이 높은 사람들의 반응을 분석해보면, [디즈니] [스미스] [자스민] [알라딘] 등 영화 배우와 제작사에게 
+  긍정적인 반응을 보였고, [노래] [음악] [영상미] 등 시청각적인 요소가 긍정적이었다고 판단됩니다. <br>
+  또한 [아이] [감동] [어릴적] [원작] 등의 키워드를 통해 어릴적 향수를 불러일으켜 감동적이었다고 유추해볼 수 있습니다. <br> 
   <br>
 
-#### 3.5 C 그룹의 워드클라우드**
+#### 3.5 C 그룹의 워드클라우드
 
-```{r}
+```{r, eval=FALSE}
 # C 그룹의 워드클라우드
 C_text <- readLines("알라딘_리뷰_전처리_후_C.txt")
 
@@ -487,3 +498,9 @@ wordcloud2(C_wc, size=0.6,
            col="random-light", backgroundColor="black",
            fontFamily='나눔바른고딕')
 ```
+
+  ![C그룹의 워드클라우드](C그룹의_워드클라우드.png)
+  *html에서 워드클라우드가 하나만 생성되는 오류로 인해 결과물을 이미지로 대체하였습니다.*
+  
+  반면 낮은 평점을 준 사람들은 반대로 [평점] [애니메이션] [솔직히] [노잼] [개노잼] [유치하고] 등의 키워드를 통해 기대만큼의 재미는 느끼지 못한 것으로 판단됩니다. <br>
+  
