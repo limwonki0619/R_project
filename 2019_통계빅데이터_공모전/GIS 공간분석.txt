@@ -16,3 +16,5 @@ http://mapwindow4.codeplex.com/
 보육소외지역 진단과 서울시의 국공립어린이집 추가공급지역 비교 / https://mapmatters.tistory.com/10 [Select by Location]
 
 QGIS-빅데이터 기초분석강의 / https://bigdata.seoul.go.kr/lctre/selectLctreOnline.do?r_id=P880&online_lctre_seq=16&sch_type=&sch_text=&currentPage=1
+
+[PYTHON] folium을 이용하여 서울시 동별 인구 수 시각화하기 / https://d-hyeon.tistory.com/2
