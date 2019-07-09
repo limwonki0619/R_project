@@ -150,6 +150,7 @@ for (url in page_url) {
   movie_name <- c(movie_name, rep(moviename, length(lis))) # 영화이름
 }
 ```
+
 ```{r, eval=FALSE}
 
 naver_movie_reviews <- data.frame(영화명=movie_name,
@@ -181,7 +182,7 @@ write.xlsx(naver_movie_reviews, file=paste0("네이버_영화_리뷰_",moviename
 
   <br>
   
-#### 2.1.1 크롤링한 데이터 불러오기
+#### 2.1.1 크롤링한 데이터 불러오기 
 
 ```{r}
 # 수집된 데이터 불러오기 -------------------------------- 
@@ -192,7 +193,7 @@ str(dataset)
 
   <br>
 
-#### 2.1.2 데이터 형태 맞춰주기
+#### 2.1.2 데이터 형태 맞춰주기 
 
 ```{r}
 dataset$점수 <- as.numeric(dataset$점수)
@@ -258,11 +259,11 @@ ggplot(all_date_point,aes(x=날짜)) +
 
   <br>
 
-  시간이 지남에 따라 평점평균이 점차 감소하는 추세를 보이고 있습니다. <br> 
+  시간이 지남에 따라 평점평균이 점차 감소하는 경향을 보이고 있습니다. <br> 
   
   <br> 
   
-#### 크루스칼 왈리스 비모수 검정 : 일별 평점평균에 차이가 있을까?
+#### ***크루스칼 왈리스 비모수 검정 : 일별 평점평균에 차이가 있을까?*** 
 
   <br>
   
@@ -270,13 +271,12 @@ ggplot(all_date_point,aes(x=날짜)) +
   
   ![변수형태별 분석방법](변수유형별 분석방법.png) <br>
   
-*** 
+***
   
   ![3집단 이상의 평균비교 프로세스](3집단 평균비교 프로세스.png) <br> 
   
   <br>
-  <br> 
-
+  
   세 집단 이상의 평균 비교를 하는 모수적인 방법으로는 분산분석(ANOVA)이 있고, <br>
   비모수적 방법으로 크루스칼 왈리스(Kruskal-Wallis H) 분석 방법이 있습니다. <br>
   여기서 비모수적 이라는 말은 모집단의 분포가 정규성을 충족시키지 못함을 뜻합니다. <br>
@@ -290,8 +290,9 @@ ggplot(all_date_point,aes(x=날짜)) +
 qqnorm(dataset$점수); qqline(dataset$점수, col="red") # 리뷰점수가 정규성을 갖지 않는다.
 ```
 
-  일별 평균의 차이를 분석하기에 앞서 정규성을 만족하는지 직관적으로 알아보기 위해 그래프로 확인해본 결과 <br>
+  일별 평균의 차이를 분석하기에 앞서 정규성을 만족하는지 알아보기 위해 그래프로 확인해본 결과 <br>
   정규성이 만족되지 않으므로, 비모수적 검정방법인 크루스칼 왈리스 검정을 시행해보도록 하겠습니다. <br>
+  *정규성 검정 함수인 `shapiro.test()`는 샘플갯수가 3 이상 3000개 미만이어야 가능하므로 여기서는 생략하도록 하겠습니다.* <br>
   
   <br>
   
@@ -321,7 +322,7 @@ dunn.test(dataset$점수, dataset$날짜, method='bonferroni',  altp=TRUE)
 ggplot(all_date_point, aes(x=날짜, y=댓글수)) +
   geom_col(fill="antiquewhite", alpha=0.7, color="grey20") + 
   geom_text(aes(y=댓글수+30, label=댓글수), color='grey20', family="jalnan", size=3) + 
-  geom_text(data = filter(all_date_point, 요일 %in% c("토", "일")), aes(y=100, label=요일), color="red", family="jalnan") + 
+  geom_text(data = filter(all_date_point, 요일 %in% c("토", "일")), aes(y=100, label=요일), color="Coral", family="jalnan") + 
     theme_bw(base_family = "jalnan", base_size = 12) +
     labs(title="일별 댓글 수",y="댓글 수(단위:건)", subtitle="2019-05-23 ~ 2019-07-04") +
     theme(plot.title = element_text(hjust=0.5),
@@ -366,7 +367,9 @@ ggplot(all_time_point,aes(x=시간)) +
   geom_text(aes(y=date_mean_point+0.08, label=round(date_mean_point,2), family="dohyeon"))
 ```
 
-#### 크루스칼 왈리스 비모수 검정 : 시간대별 평점평균에 차이가 있을까?
+
+
+#### ***크루스칼 왈리스 비모수 검정 : 시간대별 평점평균에 차이가 있을까?***
 
 ```{r}
 kruskal.test(점수~시간, dataset)
@@ -389,19 +392,13 @@ ggplot(all_time_point, aes(x=시간, y=댓글수)) +
 ```
 
   다음으로 시간대별 댓글 수를 보면, 오후시간대보다 밤 시간대에 댓글이 많이 생성되는것을 파악할 수 있습니다. <br>
-  어쩌면 당연한 얘기일 수도 있지만, 마케팅적인 측면에서 본다면 목요일 정오시간부터 영화관련 홍보를 하는 것이 홍보효과를 극대화시킬 수 있지 않을까 생각합니다. <br>
-
+  어쩌면 당연한 얘기일 수도 있지만, 마케팅적인 측면에서 본다면 목요일 7시 부터 영화관련 홍보를 하는 것이 홍보효과를 극대화시킬 수 있지 않을까 생각합니다. <br>
 
 ###  **3. 리뷰 분석 : 평점이 높은 그룹과 낮은 그룹을 대상으로**
-***
+*** 
 
 #### 3.1 그룹별 데이터 생성 및 필요 패키지 설치 
 
-```{r}
-A_group <- filter(dataset, 평점그룹 == "A") # 9~10점 
-B_group <- filter(dataset, 평점그룹 == "B") # 6~8점
-C_group <- filter(dataset, 평점그룹 == "C") # 5 점 이하
-```
 ```{r, eval=FALSE}
 library(wordcloud2)
 library(reshape2)
@@ -410,6 +407,12 @@ library(reshape2)
 ```{r, include=FALSE}
 library(wordcloud2)
 library(reshape2)
+```
+
+```{r}
+A_group <- filter(dataset, 평점그룹 == "A") # 9~10점 
+B_group <- filter(dataset, 평점그룹 == "B") # 6~8점
+C_group <- filter(dataset, 평점그룹 == "C") # 5 점 이하
 ```
 
   <br>
@@ -449,7 +452,6 @@ write.table(C_review,"알라딘_리뷰_전처리_후_C.txt", row.names=F, col.na
 
 ```{r}
 A_text <- readLines("알라딘_리뷰_전처리_후_A.txt")
-head(sort(table(A_text), decreasing = T),50)
 ```
 
 ```{r}
@@ -468,22 +470,25 @@ for (i in 1:length(gsub_txt)) {
 }
 
 A_text <- A_text[A_text != ""]
+```
 
+```{r}
 A_wc <-head(sort(table(A_text), decreasing = T),50)
 wordcloud2(A_wc, size=0.7, 
            col="random-light", backgroundColor="black",
            fontFamily='나눔바른고딕')
-
 ```
 
+  <br> 
+  
   먼저 평점이 높은 사람들의 반응을 분석해보면, [디즈니] [스미스] [자스민] [알라딘] 등 영화 배우와 제작사에게 
   긍정적인 반응을 보였고, [노래] [음악] [영상미] 등 시청각적인 요소가 긍정적이었다고 판단됩니다. <br>
-  또한 [아이] [감동] [어릴적] [원작] 등의 키워드를 통해 어릴적 향수를 불러일으켜 감동적이었다고 유추해볼 수 있습니다. <br> 
+  또한 [아이] [감동] [어릴적] [원작] 등의 키워드를 통해 어릴적 향수를 느낄 수 있는 부분이 긍적적으로 작용한 것으로 보입니다. <br> 
   <br>
 
 #### 3.5 C 그룹의 워드클라우드
 
-```{r, eval=FALSE}
+```{r}
 # C 그룹의 워드클라우드
 C_text <- readLines("알라딘_리뷰_전처리_후_C.txt")
 
@@ -498,7 +503,9 @@ C_text <- C_text[C_text != ""]
 
 library(wordcloud2)
 C_wc <-head(sort(table(C_text), decreasing = T),50)
+```
 
+```{r, eval=FALSE}
 # 워드클라우드 생성 
 wordcloud2(C_wc, size=0.6, 
            col="random-light", backgroundColor="black",
@@ -506,7 +513,9 @@ wordcloud2(C_wc, size=0.6,
 ```
 
   ![C그룹의 워드클라우드](C그룹의_워드클라우드.png)
-  *html에서 워드클라우드가 하나만 생성되는 오류로 인해 결과물을 이미지로 대체하였습니다.*
+  <br>
   
-  반면 낮은 평점을 준 사람들은 반대로 [평점] [애니메이션] [솔직히] [노잼] [개노잼] [유치하고] 등의 키워드를 통해 기대만큼의 재미는 느끼지 못한 것으로 판단됩니다. <br>
+  *html에서 워드클라우드가 하나만 생성되는 오류로 인해 결과물을 이미지로 대체하였습니다.* 
+  반면 낮은 평점을 준 사람들은 반대로 [평점] [애니메이션] [솔직히] [노잼] [개노잼] [유치하고] 등의 키워드를 통해 기대만큼의 재미는 느끼지 못한 것으로 판단됩니다. 
+  <br>
   
