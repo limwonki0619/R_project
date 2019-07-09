@@ -11,10 +11,10 @@ http://mapwindow4.codeplex.com/
 
 서울지역 5대 강력범죄 데이터 분석 by HyunSu-jin / https://github.com/HyunSu-Jin/seoul_crime/blob/master/seoul_crime.ipynb
 
-서울자전거 따릉이 대여소 시각화(2) - 지도 시각화 / https://yahwang.github.io/posts/6 / Tableau 이용 
-
 보육소외지역 진단과 서울시의 국공립어린이집 추가공급지역 비교 / https://mapmatters.tistory.com/10 [Select by Location]
 
 QGIS-빅데이터 기초분석강의 / https://bigdata.seoul.go.kr/lctre/selectLctreOnline.do?r_id=P880&online_lctre_seq=16&sch_type=&sch_text=&currentPage=1
 
-[PYTHON] folium을 이용하여 서울시 동별 인구 수 시각화하기 / https://d-hyeon.tistory.com/2
+[PYTHON] folium을 이용하여 서울시 동별 인구 수 시각화하기 / https://d-hyeon.tistory.com/2 ***
+
+대한민국 행정동 경계 파일 / https://github.com/vuski/admdongkor
