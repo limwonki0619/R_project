@@ -17,4 +17,4 @@ QGIS-빅데이터 기초분석강의 / https://bigdata.seoul.go.kr/lctre/selectLctreOnline
 
 [PYTHON] folium을 이용하여 서울시 동별 인구 수 시각화하기 / https://d-hyeon.tistory.com/2 ***
 
-대한민국 행정동 경계 파일 / https://github.com/vuski/admdongkor
+대한민국 행정동 경계 파일 / https://github.com/southkorea/seoul-maps
